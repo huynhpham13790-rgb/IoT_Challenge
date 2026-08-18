@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<configurator>
+  <domain name="SmartIV"/>
+  <cluster manufacturerCode="0x1049">
+    <name>Smart IV Vitals</name>
+    <domain>SmartIV</domain>
+    <description>Custom cluster carrying Smart IV AI data (HR/SpO2/Flow/Drop/Alarm)</description>
+    <code>0xFC01</code>
+    <define>SMART_IV_VITALS_CLUSTER</define>
+    <client init="false" tick="false">true</client>
+    <server init="false" tick="false">true</server>
+    <attribute side="server" code="0x0000" define="HEART_RATE"    type="int16s"    writable="true" default="0x0000" optional="false">HeartRate</attribute>
+    <attribute side="server" code="0x0001" define="SPO2"          type="int16u"    writable="true" default="0x0000" optional="false">Spo2</attribute>
+    <attribute side="server" code="0x0002" define="FLOW_RATIO"    type="int16u"    writable="true" default="0x0000" optional="false">FlowRatio</attribute>
+    <attribute side="server" code="0x0003" define="DROP_RATIO"    type="int16s"    writable="true" default="0x0000" optional="false">DropRatio</attribute>
+    <attribute side="server" code="0x0004" define="ALARM_BITMAP"  type="bitmap16"  writable="true" default="0x0000" optional="false">AlarmBitmap</attribute>
+    <attribute side="server" code="0x0005" define="WEIGHT_G"        type="int16u" writable="true" default="0x0000" optional="false">WeightG</attribute>
+    <attribute side="server" code="0x0006" define="DROPS_PER_MIN"   type="int16u" writable="true" default="0x0000" optional="false">DropsPerMin</attribute>
+    <attribute side="server" code="0x0007" define="TARGET_FLOW_ML_H" type="int16u" writable="true" default="0x0064" optional="false">TargetFlowMlH</attribute>
+    <attribute side="server" code="0x0008" define="TARGET_DROPS_PER_MIN" type="int16u" writable="true" default="0x0014" optional="false">TargetDropsPerMin</attribute>
+    <attribute side="server" code="0x0009" define="TARE_COMMAND"         type="int8u"  writable="true" default="0x00"   optional="false">TareCommand</attribute>
+    <attribute side="server" code="0x000A" define="HR_RECALIBRATE_COMMAND" type="int8u" writable="true" default="0x00" optional="false">HrRecalibrateCommand</attribute>
+    <attribute side="server" code="0x000B" define="HR_BASELINE_SECONDS_REMAINING" type="int8u" writable="true" default="0x00" optional="false">HrBaselineSecondsRemaining</attribute>
+    <attribute side="server" code="0x000C" define="HR_BASELINE_BPM" type="int16u" writable="true" default="0x0000" optional="false">HrBaselineBpm</attribute>
+    <attribute side="server" code="0x000D" define="TARE_EVENT_COUNT" type="int8u" writable="true" default="0x00" optional="false">TareEventCount</attribute>
+    <attribute side="server" code="0x000E" define="HR_BASELINE_EVENT_COUNT" type="int8u" writable="true" default="0x00" optional="false">HrBaselineEventCount</attribute>
+    <!-- Output of the on-chip time-series forecaster (ts_monitor.c). Until
+         these existed, the forecaster's result reached the server ONLY over
+         the USB-serial fallback gateway: the Zigbee path carried four trend
+         BITS inside AlarmBitmap and no numbers at all, so the dashboard's
+         "AI forecast (on-chip)" card sat on "Collecting the first 64
+         seconds..." forever on a bed running through the Pi.
+         0xFFFF on a forecast = no trustworthy value for that channel. -->
+    <attribute side="server" code="0x000F" define="TS_FLAGS" type="bitmap16" writable="true" default="0x0000" optional="false">TsFlags</attribute>
+    <attribute side="server" code="0x0010" define="HR_FORECAST_16S" type="int16u" writable="true" default="0xFFFF" optional="false">HrForecast16s</attribute>
+    <attribute side="server" code="0x0011" define="SPO2_FORECAST_16S" type="int16u" writable="true" default="0xFFFF" optional="false">Spo2Forecast16s</attribute>
+    <attribute side="server" code="0x0012" define="HR_TREND_BPM_PER_MIN" type="int16s" writable="true" default="0x0000" optional="false">HrTrendBpmPerMin</attribute>
+    <attribute side="server" code="0x0013" define="TS_ANOMALY_SCORE_X100" type="int16u" writable="true" default="0x0000" optional="false">TsAnomalyScoreX100</attribute>
+    <attribute side="server" code="0x0014" define="DROPS_FORECAST_16S" type="int16u" writable="true" default="0xFFFF" optional="false">DropsForecast16s</attribute>
+    <attribute side="server" code="0x0015" define="DROPS_TREND_DPM_PER_MIN" type="int16s" writable="true" default="0x0000" optional="false">DropsTrendDpmPerMin</attribute>
+  </cluster>
+</configurator>

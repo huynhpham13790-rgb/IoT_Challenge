@@ -1,0 +1,66 @@
+# ============================================================================
+#  .gitignore  -  repo FPT  (github.com/Quan098b/FPT, che do Private)
+#
+#  Repo rieng tu nen day len GAN NHU TAT CA: ma nguon, cau hinh, tai lieu,
+#  model AI, SDK chep kem, file build (.out .map .exe .obj), firmware
+#  .ota/.gbl, va ca coordinator_backup.json / database.db / state.json.
+#
+#  Chi loai tru 2 nhom, ca hai deu vi GioI HAN CUA GITHUB chu khong phai
+#  de cho gon repo. Ca hai deu sinh lai duoc, khong mat gi.
+# ============================================================================
+
+
+# ---------------------------------------------------------------------------
+# 1. node_modules cua Zigbee2MQTT
+#
+#    Mot ban "pnpm install" day du: hang chuc nghin file, vai tram MB.
+#    GitHub chan file don le >100 MB va canh bao khi repo >1 GB.
+#
+#    Cai lai bang dung mot lenh:
+#        cd SmartIV_MQTT\zigbee2mqtt
+#        corepack pnpm install
+# ---------------------------------------------------------------------------
+**/node_modules/
+**/.pnpm/
+**/.pnpm-store/
+
+
+# ---------------------------------------------------------------------------
+# 2. Log chay
+#
+#    SmartIV_MQTT/logs/gateway-zigbee2mqtt-stdout.log da phinh len 109 MB
+#    va lam GitHub TU CHOI ca lan push (loi GH001, gioi han 100 MB/file).
+#    Zigbee2MQTT con tu xoay vong log trong zigbee2mqtt/data/log/<timestamp>/.
+#
+#    Toan bo la log runtime - chay lai la sinh moi.
+# ---------------------------------------------------------------------------
+SmartIV_MQTT/logs/
+**/data/log/
+*.log
+*.pid
+
+
+# ============================================================================
+#  TRUOC MOI LAN PUSH - tim file qua lon de khong bi tu choi lan nua:
+#
+#    Get-ChildItem F:\FPT\FPT -Recurse -File -ErrorAction SilentlyContinue |
+#        Where-Object { $_.Length -gt 50MB } |
+#        Select-Object @{n='MB';e={[math]::Round($_.Length/1MB,1)}}, FullName
+#
+#  Bat ky file nao >100 MB deu bi GitHub chan. >50 MB thi bi canh bao.
+# ============================================================================
+
+
+# ============================================================================
+#  LUU Y BAO MAT
+#
+#  coordinator_backup.json chua NETWORK KEY cua mang Zigbee va DANG duoc
+#  day len (chap nhan duoc vi repo Private).
+#
+#  Neu sau nay doi repo sang Public thi PHAI doi khoa TRUOC:
+#     1. Xoa coordinator_backup.json, database.db, state.json
+#     2. Khoi dong lai Zigbee2MQTT de no sinh khoa moi
+#     3. Pair lai cac thiet bi
+#  Khoa cu da nam trong lich su git vinh vien - xoa file o commit sau
+#  khong go duoc no ra.
+# ============================================================================

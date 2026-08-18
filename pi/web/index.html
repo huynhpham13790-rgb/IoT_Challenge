@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081311">
+  <title>FPT Zigbee Gateway</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="FPT Zigbee Gateway">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span><strong>FPT Edge</strong><small>Zigbee Control</small></span>
+      </a>
+      <div class="connection" id="connectionBadge">
+        <span class="status-dot"></span>
+        <span id="connectionText">Đang kết nối…</span>
+      </div>
+    </header>
+
+    <section class="hero" id="top">
+      <div>
+        <p class="eyebrow">TRUNG TÂM ĐIỀU KHIỂN • EFR32xG24</p>
+        <h1>Cập nhật thiết bị Zigbee<br><em>rõ ràng, an toàn.</em></h1>
+        <p class="hero-copy">Theo dõi gateway, dữ liệu cảm biến và toàn bộ tiến trình OTA trên một màn hình.</p>
+      </div>
+      <div class="pulse-visual" aria-hidden="true">
+        <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+        <span class="chip">xG24<small>OTA</small></span>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="Trạng thái hệ thống">
+      <article class="metric"><span class="metric-icon mint">⌁</span><div><small>MQTT Broker</small><strong id="mqttState">Chờ dữ liệu</strong></div></article>
+      <article class="metric"><span class="metric-icon cyan">⌾</span><div><small>Mạng Zigbee</small><strong id="zigbeeState">Chờ dữ liệu</strong></div></article>
+      <article class="metric"><span class="metric-icon amber">◫</span><div><small>Thiết bị đã thấy</small><strong><b id="deviceCount">0</b> thiết bị</strong></div></article>
+      <article class="metric"><span class="metric-icon violet">↯</span><div><small>Bản tin đã nhận</small><strong id="messageCount">0</strong></div></article>
+    </section>
+
+    <section class="workspace">
+      <article class="panel ota-panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">OTA WORKSPACE</p><h2>Cập nhật firmware</h2></div>
+          <span class="safe-badge">● Truyền qua Zigbee</span>
+        </div>
+
+        <label class="field-label" for="deviceSelect">Thiết bị đích</label>
+        <div class="select-wrap">
+          <select id="deviceSelect" aria-label="Chọn thiết bị OTA"><option value="">Chưa phát hiện thiết bị</option></select>
+          <span>⌄</span>
+        </div>
+
+        <div class="upload-box">
+          <div class="upload-copy">
+            <small>FILE FIRMWARE ZIGBEE OTA</small>
+            <strong id="firmwareFileName">Chưa chọn file .ota</strong>
+            <span id="firmwareFileMeta">Tối đa 4 MB · gateway sẽ kiểm tra header trước khi nhận</span>
+          </div>
+          <input id="firmwareFile" type="file" accept=".ota,application/octet-stream" hidden>
+          <button class="btn upload" id="chooseFirmwareButton" type="button">Chọn file</button>
+          <button class="btn secondary" id="uploadFirmwareButton" type="button" disabled>Tải lên</button>
+        </div>
+
+        <div class="firmware-card">
+          <div class="file-icon">OTA</div>
+          <div class="firmware-info">
+            <small>Trạng thái firmware</small>
+            <strong id="otaState">Chưa kiểm tra</strong>
+            <span id="otaDetail">Chọn thiết bị để bắt đầu</span>
+            <div class="version-row" id="otaVersions">
+              <span>Đang chạy <b id="installedVersion">—</b></span>
+              <span>Trên gateway <b id="latestVersion">—</b></span>
+            </div>
+          </div>
+          <div class="progress-number" id="otaPercent">—</div>
+        </div>
+
+        <div class="progress-track" aria-label="Tiến độ OTA"><span id="progressBar"></span></div>
+        <div class="progress-meta"><span id="progressLabel">Sẵn sàng</span><span id="remainingLabel">—</span></div>
+
+        <div class="actions">
+          <button class="btn secondary" id="checkButton" disabled>Kiểm tra bản mới</button>
+          <button class="btn primary" id="updateButton" disabled>Bắt đầu OTA <span>→</span></button>
+          <button class="btn danger hidden" id="abortButton">Dừng cập nhật</button>
+        </div>
+        <p class="notice" id="actionMessage" role="status">Chọn file .ota, tải lên gateway, sau đó kiểm tra bản mới và bắt đầu OTA.</p>
+      </article>
+
+      <article class="panel flow-panel">
+        <div class="panel-heading"><div><p class="eyebrow">LUỒNG DỮ LIỆU</p><h2>OTA diễn ra thế nào?</h2></div></div>
+        <div class="flow">
+          <div class="flow-step active"><span>01</span><div><strong>Gateway</strong><small>Đọc file firmware</small></div><i></i></div>
+          <div class="flow-step"><span>02</span><div><strong>Zigbee Mesh</strong><small>Truyền từng block</small></div><i></i></div>
+          <div class="flow-step"><span>03</span><div><strong>Storage Slot</strong><small>0x080C0000</small></div><i></i></div>
+          <div class="flow-step"><span>04</span><div><strong>Gecko Bootloader</strong><small>Xác minh &amp; cài đặt</small></div></div>
+        </div>
+        <div class="memory-map">
+          <div class="memory-title"><span>Bản đồ flash MG24 tham khảo</span><small>1536 KB</small></div>
+          <div class="memory-bar"><span class="boot" title="Bootloader"></span><span class="app" title="Ứng dụng"></span><span class="slot" title="OTA slot"></span><span class="nvm" title="NVM"></span></div>
+          <div class="legend"><span><i class="boot"></i>Bootloader</span><span><i class="app"></i>Application</span><span><i class="slot"></i>OTA slot</span><span><i class="nvm"></i>NVM</span></div>
+          <p>Slot OTA: <code>0x080C0000</code> → <code>0x08174000</code> · Kích thước <code>0xB4000</code></p>
+        </div>
+      </article>
+    </section>
+
+    <section class="devices-section">
+      <div class="section-heading"><div><p class="eyebrow">THIẾT BỊ TRỰC TUYẾN</p><h2>Dữ liệu mới nhất</h2></div><span id="lastRefresh">Chưa có dữ liệu</span></div>
+      <div class="devices-grid" id="devicesGrid">
+        <div class="empty-state"><span>⌁</span><strong>Đang chờ thiết bị Zigbee</strong><p>Dữ liệu sẽ xuất hiện ngay khi gateway nhận được bản tin MQTT.</p></div>
+      </div>
+    </section>
+
+    <footer><span>FPT Zigbee Gateway</span><span>Dashboard cục bộ · <b id="footerPort">localhost</b></span></footer>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

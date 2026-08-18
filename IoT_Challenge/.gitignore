@@ -1,0 +1,52 @@
+# Build output
+cmake_gcc/build/
+
+# Simplicity Studio local machine state (not portable between machines)
+.projectlinkstore
+.silabsExtContext
+.uceditor/
+vscode.conf
+
+# Vendored SDK copies. The build does NOT use these - it compiles against the
+# SDK installed under ~/.silabs/slt/installs/conan/... (see the -I paths in
+# cmake_gcc/build/compile_commands.json). Keeping ~50 MB of duplicated vendor
+# code in git only slows every clone down.
+simplicity_sdk_2025.12.3/
+aiml_2.2.2/
+
+# Other Simplicity Studio example projects that happened to be created inside
+# this workspace folder. Nothing here imports from them.
+empty_3/
+zigbee_ble_dynamic_multiprotocol_light_V2*/
+trashed_modified_files/
+
+# Arduino reference sketches from the ESP8266 prototype, plus assorted scratch
+# files. The firmware logic they inspired now lives in firmware/sensor_hub.c
+# and firmware/app.c.
+*.ino
+codecambien.c
+codemoi.txt
+linktailieu.txt
+designWebForQuanKa-main.zip
+
+# Python virtualenv for the AI training pipeline (recreate with the commands in
+# AI_TIME_SERIES_TAT_TAN_TAT.md)
+.venv-ai/
+
+# AI training artefacts: the dataset and intermediate model files are large and
+# fully reproducible from the scripts. The exported model that the firmware
+# actually compiles in (firmware/model_data_ts.h) IS tracked, and so are the
+# two .tflite files themselves, under ml/models/ - a model nobody outside the
+# team can open is a model nobody can check.
+ml/ai_timeseries/dataset/
+ml/ai_timeseries/out/
+ml/ai_timeseries/out_aer*/
+__pycache__/
+
+# Claude Code local settings
+.claude/
+
+# A copy of a teammate's fork, unpacked here while porting its OLED code over
+# (see section 1.7 of docs/HUONG_DAN_A_Z.md). Not part of this project's build.
+IoT_Challenge-main/
+IoT_Challenge-main.zip

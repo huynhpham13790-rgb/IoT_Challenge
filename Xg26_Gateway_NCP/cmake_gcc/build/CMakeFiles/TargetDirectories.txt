@@ -1,0 +1,4 @@
+F:/FPT/Gateway/Xg26_Gateway_NCP/cmake_gcc/build/CMakeFiles/slc.dir
+F:/FPT/Gateway/Xg26_Gateway_NCP/cmake_gcc/build/CMakeFiles/Xg26_Gateway_NCP.dir
+F:/FPT/Gateway/Xg26_Gateway_NCP/cmake_gcc/build/CMakeFiles/edit_cache.dir
+F:/FPT/Gateway/Xg26_Gateway_NCP/cmake_gcc/build/CMakeFiles/rebuild_cache.dir
