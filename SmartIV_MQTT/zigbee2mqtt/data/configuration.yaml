@@ -1,0 +1,32 @@
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://127.0.0.1:1885
+serial:
+  port: COM10
+  adapter: ember
+  baudrate: 115200
+  rtscts: true
+frontend:
+  enabled: true
+  port: 8080
+homeassistant:
+  enabled: false
+ota:
+  zigbee_ota_override_index_location: xg26_ota_index.json
+  # Toc do truyen OTA.
+  # image_block_response_delay: thoi gian Z2M cho giua moi block (ms).
+  #   Mac dinh 250. San cung cua schema la 50 - dat nho hon Z2M se khong khoi dong.
+  # default_maximum_data_size: so byte moi block.
+  #   Mac dinh 50. Schema cho toi 100 NHUNG firmware xG26 chan cung tai 63
+  #   (MAX_CLIENT_DATA_SIZE, ota-client.c:159; block > 63 bi drop tai :1954).
+  #   => 63 la gia tri toi da dung duoc. Dat 64+ se lam OTA dung im.
+  image_block_response_delay: 50
+  default_maximum_data_size: 63
+advanced:
+  log_level: debug
+version: 5
+devices:
+  '0x403802fffe373826':
+    friendly_name: '0x403802fffe373826'
+  '0x64028ffffe641802':
+    friendly_name: '0x64028ffffe641802'

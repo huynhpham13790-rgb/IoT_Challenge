@@ -1,0 +1,19 @@
+export default {
+    zigbeeModel: ["SmartIV-Sensor"],
+
+    fingerprint: [
+        {
+            ieeeAddr: /^0x64028ffffe641802$/,
+        },
+    ],
+
+    model: "XG26-BED-TEMP",
+    vendor: "SmartIV",
+    description: "XG26 Smart IV bedside monitor with Zigbee OTA",
+
+    fromZigbee: [],
+    toZigbee: [],
+    exposes: [],
+
+    ota: true,
+};
