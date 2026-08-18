@@ -32,6 +32,11 @@
     directory: DirectoryTab
   };
 
+  // Remembers the last tab across a reload, so an administrator editing the
+  // Bed directory (or anyone else mid-task) does not land back on their
+  // role's default tab every time the page refreshes.
+  const LAST_TAB_KEY = "his.lastTab";
+
   function switchTab(tab) {
     document.querySelectorAll(".nav-btn[data-tab]").forEach((btn) => {
       btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
@@ -45,6 +50,8 @@
       if (name === tab) module.activate();
       else module.stop?.();
     });
+
+    localStorage.setItem(LAST_TAB_KEY, tab);
   }
 
   document.querySelectorAll(".nav-btn[data-tab]").forEach((btn) => {
@@ -99,9 +106,18 @@
   // alarms are for clinical roles: a technician has no way to act on one.
   if (Session.can(Session.CAP.viewWard)) CriticalAlarm.init();
 
-  // Land on the first tab this role can actually use.
-  const landing = LANDING.find(([cap]) => Session.can(cap));
-  if (landing) switchTab(landing[1]);
+  // Land back on whatever tab was open before the reload, as long as this
+  // role still has a nav button for it (Session.applyTo above already
+  // removed any the role cannot use). Otherwise fall back to the first tab
+  // this role can actually use.
+  const lastTab = localStorage.getItem(LAST_TAB_KEY);
+  const lastTabAllowed = lastTab && document.querySelector(`.nav-btn[data-tab="${lastTab}"]`);
+  if (lastTabAllowed) {
+    switchTab(lastTab);
+  } else {
+    const landing = LANDING.find(([cap]) => Session.can(cap));
+    if (landing) switchTab(landing[1]);
+  }
 
   await MonitoringHub.start();
 

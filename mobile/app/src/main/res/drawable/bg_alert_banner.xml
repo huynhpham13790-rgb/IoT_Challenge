@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Base shape only - tinted at runtime to the alert's status color
+     (warning or critical), same pattern as bg_status_chip.xml. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="10dp" />
+    <solid android:color="@color/status_critical" />
+</shape>

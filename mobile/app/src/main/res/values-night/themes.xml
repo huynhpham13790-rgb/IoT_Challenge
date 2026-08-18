@@ -1,0 +1,16 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Intentionally identical to values/themes.xml - see the comment there.
+         An empty override here would let Material3's DayNight parent pick
+         its own dark palette, which is exactly what this file exists to
+         prevent. -->
+    <style name="Base.Theme.SmartIVMonitor" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSurface">@color/panel</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/sidebar</item>
+        <item name="android:navigationBarColor">@color/panel</item>
+    </style>
+</resources>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <TextView
+        android:id="@+id/emptyDetailState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/label_select_bed"
+        android:textColor="@color/text_dim"
+        android:textSize="14sp" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/detailScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:fillViewport="true"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Visible only on a phone, where the list and the detail
+                     cannot both be on screen - see BedDetailFragment.showBackButton. -->
+                <ImageButton
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/label_back"
+                    android:src="@drawable/ic_arrow_back"
+                    android:tint="@color/text_primary"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/detailBedId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        tools:text="BED-01" />
+
+                    <TextView
+                        android:id="@+id/detailRoom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_dim"
+                        tools:text="ICU-1" />
+                </LinearLayout>
+
+                <include android:id="@+id/detailStatusChip" layout="@layout/item_status_chip_large" />
+            </LinearLayout>
+
+            <!-- Alert banner: the single most important thing on this screen
+                 when it is showing, so it sits right under the header, in the
+                 alert's own color, and names the CAUSE (AI v2 messages do,
+                 not just "line blocked" - see VitalsStatusEvaluator on the
+                 server), not just that something is wrong. -->
+            <LinearLayout
+                android:id="@+id/alertBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                android:padding="14dp"
+                android:background="@drawable/bg_alert_banner"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/alertBannerText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    tools:text="Tắc dây truyền — giọt chậm lại và túi dịch không nhẹ đi" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/acknowledgeButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_gravity="end"
+                    android:text="@string/btn_acknowledge" />
+            </LinearLayout>
+
+            <!-- Vitals, two per row - big enough to read from arm's length,
+                 which is the point of a bedside/tablet screen over a phone. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <include android:id="@+id/bigSpo2" layout="@layout/item_vital_big" />
+                    <include android:id="@+id/bigHr" layout="@layout/item_vital_big" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <include android:id="@+id/bigTemp" layout="@layout/item_vital_big" />
+                    <include android:id="@+id/bigDrip" layout="@layout/item_vital_big" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <include android:id="@+id/bigFlow" layout="@layout/item_vital_big" />
+                    <include android:id="@+id/bigRemaining" layout="@layout/item_vital_big" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/detailUpdatedText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:gravity="center"
+                android:textSize="11sp"
+                android:textColor="@color/text_dim"
+                tools:text="Cập nhật lúc 14:32:07" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</FrameLayout>

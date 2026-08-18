@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Fixed light palette, matching the web console which has no dark mode
+         either - a clinical screen should not change its colors under a
+         nurse depending on the phone's system setting. -->
+    <style name="Base.Theme.SmartIVMonitor" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSurface">@color/panel</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/sidebar</item>
+        <item name="android:navigationBarColor">@color/panel</item>
+    </style>
+
+    <style name="Theme.SmartIVMonitor" parent="Base.Theme.SmartIVMonitor" />
+</resources>

@@ -1,0 +1,6 @@
+<resources>
+    <!-- Width of the bed-list pane in the master-detail layout. On a phone
+         (this bucket) SlidingPaneLayout only ever shows one pane at a time,
+         so this only matters as the list's own content width. -->
+    <dimen name="list_pane_width">320dp</dimen>
+</resources>

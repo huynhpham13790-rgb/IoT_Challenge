@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">Smart IV Monitor</string>
+
+    <!-- Login -->
+    <string name="label_login_subtitle">Đăng nhập vào hệ thống theo dõi</string>
+    <string name="hint_server_address">Địa chỉ server</string>
+    <string name="hint_server_address_sub">Ví dụ: 192.168.1.50:5100 — máy này phải cùng Wi-Fi/mạng LAN với server</string>
+    <string name="hint_username">Tên đăng nhập</string>
+    <string name="hint_password">Mật khẩu</string>
+    <string name="btn_connect">Đăng nhập</string>
+    <string name="error_missing_fields">Nhập đầy đủ địa chỉ server, tên đăng nhập và mật khẩu</string>
+    <string name="error_wrong_credentials">Sai tên đăng nhập hoặc mật khẩu</string>
+    <string name="error_cannot_reach_server">Không kết nối được tới server này. Kiểm tra hai máy có cùng Wi-Fi và địa chỉ IP:port có đúng không</string>
+    <string name="error_generic">Có lỗi xảy ra, thử lại</string>
+
+    <!-- Bed list pane -->
+    <string name="stat_total">Tổng số</string>
+    <string name="stat_critical">Nguy kịch</string>
+    <string name="stat_warning">Cảnh báo</string>
+    <string name="stat_stable">Ổn định</string>
+    <string name="stat_offline">Mất kết nối</string>
+    <string name="label_no_beds">Chưa nhận được dữ liệu giường nào</string>
+    <string name="hint_search_bed">Tìm theo mã giường hoặc phòng</string>
+    <string name="filter_all">Tất cả</string>
+    <string name="label_no_match">Không có giường nào khớp bộ lọc</string>
+
+    <!-- Bed detail pane -->
+    <string name="label_select_bed">Chọn một giường bên trái để xem chi tiết</string>
+    <string name="label_back">Quay lại danh sách</string>
+    <string name="btn_acknowledge">Đã xử lý cảnh báo</string>
+    <string name="label_no_signal">Mất tín hiệu: %1$s</string>
+    <string name="label_unknown">Chưa biết</string>
+    <string name="label_minutes_left">còn khoảng %1$d phút</string>
+
+    <string name="detail_spo2">SpO2</string>
+    <string name="detail_hr">Nhịp tim</string>
+    <string name="detail_temp">Nhiệt độ</string>
+    <string name="detail_drip">Tốc độ giọt</string>
+    <string name="detail_flow">Tốc độ truyền</string>
+    <string name="detail_remaining">Dịch còn lại</string>
+
+    <!-- Relative "last updated" phrasing -->
+    <string name="label_updated_now">Vừa cập nhật</string>
+    <string name="label_updated_seconds_ago">%1$d giây trước</string>
+    <string name="label_updated_minutes_ago">%1$d phút trước</string>
+    <string name="label_updated_at">Cập nhật lúc %1$s</string>
+</resources>

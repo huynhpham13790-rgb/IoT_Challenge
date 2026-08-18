@@ -496,7 +496,15 @@ public sealed class BedTcpIngestionService : BackgroundService
 
         var bed = bedStateStore.Upsert(reading.BedId, state =>
         {
-            state.Room = reading.Room;
+            // Room is the administrator's data (see Bed directory / ManageBeds),
+            // not the device's. Only fill it in the first time this bed is ever
+            // seen - overwriting it on every reading would silently undo a room
+            // change made through the directory the next time the device (or a
+            // fake/test sender) reports the room it was configured with.
+            if (string.IsNullOrWhiteSpace(state.Room))
+            {
+                state.Room = reading.Room;
+            }
             state.Status = status;
             state.Spo2 = reading.Spo2;
             state.HeartRate = reading.HeartRate;

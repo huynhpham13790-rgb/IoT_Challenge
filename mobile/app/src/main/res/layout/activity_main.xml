@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:background="@color/bg"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/sidebar"
+        android:elevation="4dp"
+        app:title="@string/app_name"
+        app:titleTextColor="@color/white" />
+
+    <!-- Master-detail: bed list on the left, bed detail on the right.
+         SlidingPaneLayout shows both panes side by side when there is room
+         (list_pane_width + a sensible minimum for the detail pane fits the
+         screen - see values-w600dp/values-w1240dp), and collapses to
+         whichever single pane is open on a narrower screen. This is the
+         standard Android tablet pattern, not a custom one. -->
+    <androidx.slidingpanelayout.widget.SlidingPaneLayout
+        android:id="@+id/slidingPaneLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/listPane"
+            android:name="com.example.smartivmonitor.BedListFragment"
+            android:layout_width="@dimen/list_pane_width"
+            android:layout_height="match_parent" />
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/detailPane"
+            android:name="com.example.smartivmonitor.BedDetailFragment"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+    </androidx.slidingpanelayout.widget.SlidingPaneLayout>
+
+</LinearLayout>

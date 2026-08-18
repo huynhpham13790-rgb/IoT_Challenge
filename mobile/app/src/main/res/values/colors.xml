@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Same palette as the ward console (server/src/HisServer/wwwroot/css/app.css)
+         so the phone/tablet app and the nursing-station screen read as the
+         same product, not two different tools. -->
+    <color name="bg">#F6F8FB</color>
+    <color name="panel">#FFFFFF</color>
+    <color name="border">#E3E8EF</color>
+    <color name="text_primary">#1C2B3A</color>
+    <color name="text_dim">#62748A</color>
+    <color name="sidebar">#1C2F4D</color>
+    <color name="accent">#2470C8</color>
+    <color name="accent_soft">#E8F2FF</color>
+
+    <!-- Status colors. Red is reserved for the patient - see the project
+         README: line/infusion faults only ever reach WARNING, never this
+         color, so CRITICAL keeps its meaning. -->
+    <color name="status_critical">#DC3C3C</color>
+    <color name="status_warning">#E69119</color>
+    <color name="status_stable">#1EA050</color>
+    <color name="status_offline">#8A97A8</color>
+</resources>

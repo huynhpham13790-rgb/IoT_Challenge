@@ -1,0 +1,5 @@
+<resources>
+    <!-- >=600dp width (small/medium tablets, or a phone in landscape): wide
+         enough for SlidingPaneLayout to show both panes side by side. -->
+    <dimen name="list_pane_width">360dp</dimen>
+</resources>

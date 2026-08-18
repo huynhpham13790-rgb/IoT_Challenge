@@ -1,0 +1,5 @@
+<resources>
+    <!-- Large tablet landscape: give the list more room since there is width
+         to spare, without letting bed cards stretch uncomfortably wide. -->
+    <dimen name="list_pane_width">420dp</dimen>
+</resources>

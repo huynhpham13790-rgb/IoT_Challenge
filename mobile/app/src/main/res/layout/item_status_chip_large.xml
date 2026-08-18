@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="7dp"
+    android:background="@drawable/bg_status_chip">
+
+    <ImageView
+        android:id="@+id/statusChipIcon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:tint="@color/white"
+        android:contentDescription="@null"
+        tools:src="@drawable/ic_status_critical" />
+
+    <TextView
+        android:id="@+id/statusChipText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/white"
+        tools:text="CRITICAL" />
+
+</LinearLayout>
