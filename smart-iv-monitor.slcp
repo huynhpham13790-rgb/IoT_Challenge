@@ -21,14 +21,14 @@ readme:
 source:
 - path: firmware/app.c
 - path: firmware/sensor_hub.c
-- path: firmware/drop_filter.c
 - path: firmware/oled_display.c
 - path: firmware/ai_fusion.c
-- path: firmware/ai_engine.cpp
+- path: firmware/drop_filter.c
 - path: firmware/line_rules.c
+- path: firmware/ai_engine.cpp
+- path: firmware/models/model_ae.c
 - path: firmware/models/model_drip.c
 - path: firmware/models/model_vitals.c
-- path: firmware/models/model_ae.c
 include:
 - path: firmware
   file_list:
@@ -36,17 +36,17 @@ include:
   - path: sensor_hub.h
   - path: oled_display.h
   - path: ai_fusion.h
-  - path: ai_engine.h
+  - path: drop_filter.h
   - path: line_rules.h
-  - path: clinical_limits.h
+  - path: ai_engine.h
 - path: firmware/models
   file_list:
+  - path: model_ae.h
+  - path: model_ae_opcodes.h
   - path: model_drip.h
   - path: model_drip_opcodes.h
   - path: model_vitals.h
   - path: model_vitals_opcodes.h
-  - path: model_ae.h
-  - path: model_ae_opcodes.h
 sdk:
   vendor: silabs
   id: simplicity_sdk
@@ -88,10 +88,16 @@ component:
   id: memory_manager
 - package: simplicity_sdk
   vendor: silabs
+  id: printf
+- package: simplicity_sdk
+  vendor: silabs
   id: sl_main
 - package: simplicity_sdk
   vendor: silabs
   id: sleeptimer
+- package: simplicity_sdk
+  vendor: silabs
+  id: slot_manager
 - package: simplicity_sdk
   vendor: silabs
   id: zigbee_basic
@@ -100,28 +106,19 @@ component:
   id: zigbee_core_cli
 - package: simplicity_sdk
   vendor: silabs
+  id: zigbee_debug_print
+- package: simplicity_sdk
+  vendor: silabs
   id: zigbee_network_steering
 - package: simplicity_sdk
   vendor: silabs
   id: zigbee_ota_client
 - package: simplicity_sdk
   vendor: silabs
-  id: zigbee_debug_print
-- package: simplicity_sdk
-  vendor: silabs
   id: zigbee_ota_client_policy
 - package: simplicity_sdk
   vendor: silabs
-  id: zigbee_ota_storage_simple_eeprom
-- package: simplicity_sdk
-  vendor: silabs
-  id: slot_manager
-- package: simplicity_sdk
-  vendor: silabs
   id: zigbee_ota_storage_simple
-- package: simplicity_sdk
-  vendor: silabs
-  id: bootloader_app_properties
 - package: simplicity_sdk
   vendor: silabs
   id: zigbee_pro_stack
@@ -165,6 +162,15 @@ autoselected_components:
 - package: simplicity_sdk
   vendor: silabs
   id: board_control
+- package: simplicity_sdk
+  vendor: silabs
+  id: bootloader_app_properties
+- package: simplicity_sdk
+  vendor: silabs
+  id: bootloader_interface
+- package: simplicity_sdk
+  vendor: silabs
+  id: bootloader_interface_s2
 - package: simplicity_sdk
   vendor: silabs
   id: brd2709a_config
@@ -619,6 +625,9 @@ autoselected_components:
   id: udelay
 - package: simplicity_sdk
   vendor: silabs
+  id: util_eeprom
+- package: simplicity_sdk
+  vendor: silabs
   id: zigbee_cli
 - package: simplicity_sdk
   vendor: silabs
@@ -629,6 +638,15 @@ autoselected_components:
 - package: simplicity_sdk
   vendor: silabs
   id: zigbee_enhanced_routing
+- package: simplicity_sdk
+  vendor: silabs
+  id: zigbee_ota_common
+- package: simplicity_sdk
+  vendor: silabs
+  id: zigbee_ota_storage_common
+- package: simplicity_sdk
+  vendor: silabs
+  id: zigbee_ota_storage_simple_eeprom
 - package: simplicity_sdk
   vendor: silabs
   id: zigbee_phy_2_4

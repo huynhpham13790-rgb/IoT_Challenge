@@ -32,6 +32,7 @@ static float s_vit_pred_next[2];
 static bool  s_vit_pred_valid;
 
 static uint8_t s_drip_persist, s_vit_persist, s_ae_persist;
+static uint8_t s_missing_persist, s_early_warn_persist;
 
 static float s_hr_baseline = 80.0f;   /* until calibration runs */
 
@@ -52,6 +53,7 @@ void ai_fusion_init(void)
   s_drip_n = s_drip_head = s_vit_n = s_vit_head = 0;
   s_drip_pred_valid = s_vit_pred_valid = false;
   s_drip_persist = s_vit_persist = s_ae_persist = 0;
+  s_missing_persist = s_early_warn_persist = 0;
 
   line_rules_init();
   ai_engine_init();       /* logs per-model status; failure is not fatal */
@@ -97,15 +99,27 @@ void ai_fusion_step(fusion_result_t *out)
   const ch_state_t drops_state = sh_drops_state();
   const ch_state_t flow_state  = sh_flow_state();
 
+  /* Raw per-tick early-warning flag, set by either forecaster below and
+   * debounced into out->early_warning once both have run - see the comment
+   * by s_early_warn_persist's use further down. */
+  bool early_warning_raw = false;
+
   const float hr    = sh_hr();
   const float spo2  = sh_spo2();
   const float dratio = sh_drops_ratio();
 
   /* "Signal lost" only counts for a sensor that WAS working. A channel that was
    * never enabled reads zero, and treating that zero as a measurement is how an
-   * empty bed ends up screaming "SpO2 0% - critical". */
-  out->rule_missing = (hr_state == CH_LOST) || (spo2_state == CH_LOST)
-                      || (drops_state == CH_LOST) || (flow_state == CH_LOST);
+   * empty bed ends up screaming "SpO2 0% - critical".
+   *
+   * Debounced like the model anomalies below (AI_PERSIST_K consecutive
+   * seconds): a single missed I2C/HX711 read otherwise flips this true for
+   * exactly one tick, which flickered the alert level - and with it the
+   * buzzer - in and out every second even though nothing was actually wrong
+   * for more than an instant. */
+  const bool missing_raw = (hr_state == CH_LOST) || (spo2_state == CH_LOST)
+                           || (drops_state == CH_LOST) || (flow_state == CH_LOST);
+  out->rule_missing = persist(&s_missing_persist, missing_raw);
 
   out->rule_spo2 = (spo2_state == CH_OK) && (spo2 < AI_SPO2_ABS);
 
@@ -163,7 +177,7 @@ void ai_fusion_step(fusion_result_t *out)
       if (target > 1.0f) {
         const float fc_ratio = out->drip_forecast_16s / target;
         if ((fc_ratio < AI_FLOW_LO || fc_ratio > AI_FLOW_HI) && !out->rule_flow) {
-          out->early_warning = true;
+          early_warning_raw = true;
         }
       }
     } else {
@@ -225,7 +239,7 @@ void ai_fusion_step(fusion_result_t *out)
         if ((f_spo2 < AI_SPO2_ABS && spo2 >= AI_SPO2_ABS)
             || (f_hr < AI_HR_ABS_LOW && hr >= AI_HR_ABS_LOW)
             || (f_hr > AI_HR_ABS_HIGH && hr <= AI_HR_ABS_HIGH)) {
-          out->early_warning = true;
+          early_warning_raw = true;
           break;
         }
       }
@@ -256,6 +270,11 @@ void ai_fusion_step(fusion_result_t *out)
   }
   out->ae_anomaly = persist(&s_ae_persist, ae_flag);
   out->ae_persist = s_ae_persist;
+
+  /* Debounced the same way as the model anomalies above: a forecast that
+   * dips out of band for one tick and back the next is noise, not a trend
+   * worth waking someone for. */
+  out->early_warning = persist(&s_early_warn_persist, early_warning_raw);
 
   /* ======================================================================
    *  6. THE TWO BRANCHES, then the level.

@@ -970,7 +970,11 @@ static void max30102_poll(void)
 #define LED_RED_PORT     gpioPortA
 #define LED_RED_PIN      5        /* mikroBUS RX  = PA05 */
 #define BUZZER_PORT      gpioPortC
-#define BUZZER_PIN_NUM   4        /* mikroBUS CS = PC04 */
+#define BUZZER_PIN_NUM   6        /* PC06 - moved off CS/PC04, which is no
+                                   * longer used for anything. NOTE: this
+                                   * does not match the "RST = PD03" entry in
+                                   * the mikroBUS pinout table below,
+                                   * confirmed intentional. */
 
 /* --- No two peripherals may share a pin ------------------------------------
  *
@@ -1007,7 +1011,7 @@ _Static_assert(SH_PINS_DIFFER(BUZZER_PORT, BUZZER_PIN_NUM,
                               HX711_DOUT_PORT, HX711_DOUT_PIN),
                "Buzzer and HX711 DOUT are on the same pin. On BRD2709A the "
                "load cell data line is PC01 = mikroBUS MISO; the buzzer is on "
-               "PC04 = mikroBUS CS. Move the wire, or move the scale.");
+               "PC06. Move the wire, or move the scale.");
 _Static_assert(SH_PINS_DIFFER(BUZZER_PORT, BUZZER_PIN_NUM,
                               HX711_SCK_PORT, HX711_SCK_PIN),
                "Buzzer and HX711 SCK are on the same pin (PC03 = mikroBUS SCK).");
@@ -1039,21 +1043,16 @@ _Static_assert(SH_PINS_DIFFER(HX711_DOUT_PORT, HX711_DOUT_PIN,
  *     một cái rồi đứng yên**. Nghe được đúng một tiếng "tách" ở mỗi lần đổi
  *     mức, và với nhịp bíp 0,3-1 giây thì tai người coi như KHÔNG NGHE THẤY GÌ.
  *
- * Bản trước lái bằng mức DC, nên nếu còi là loại thụ động thì nó im hoàn toàn
- * mà mọi thứ trong phần mềm vẫn "chạy đúng" — không có lỗi nào để mà tìm.
- *
- * Nay trong lúc "đang bíp", chân còi được **đảo mức liên tục** để tạo ra âm
- * thanh thật. Cách này kêu được với **cả hai loại**: còi thụ động phát ra đúng
- * tần số này, còn còi chủ động bị băm nguồn ở tần số đó thì vẫn kêu.
+ * Trong lúc "đang bíp", chân còi được **đảo mức liên tục** để tạo ra âm thanh
+ * thật. Cách này kêu được với **cả hai loại**: còi thụ động phát ra đúng tần
+ * số này, còn còi chủ động bị băm nguồn ở tần số đó thì vẫn kêu.
  *
  * 350 µs mỗi nửa chu kỳ ≈ 1,4 kHz — nằm trong dải tai người nhạy nhất và trong
- * vùng cộng hưởng của hầu hết còi áp điện. Vòng lặp chính quay ~5500 lần/giây
- * (đo được), tức ~180 µs một vòng, nên nửa chu kỳ 350 µs là thứ nó theo kịp. */
+ * vùng cộng hưởng của hầu hết còi áp điện. */
 #define BUZZER_TONE_HALF_PERIOD_US  350U
 
-#define BUZZER_PERIOD_CRITICAL_MS 150U    /* urgent beep = both systems failing */
-#define BUZZER_PERIOD_RED_MS      300U    /* fast beep = danger    (matches the .ino) */
-#define BUZZER_PERIOD_YELLOW_MS  1000U    /* slow beep = warning   (matches the .ino) */
+#define BUZZER_PERIOD_CRITICAL_MS 150U    /* CRITICAL: buzzer stays on continuously, only the red LED blinks at this rate */
+#define BUZZER_PERIOD_YELLOW_MS  1000U    /* LINE_WARNING: intermittent beep, on/off at this rate */
 
 static alert_level_t alert_level        = ALERT_LEVEL_NORMAL;
 static bool          buzzer_on          = false;
@@ -1104,16 +1103,7 @@ static void alert_init(void)
     alert_pin_write(lamps[i].port, lamps[i].pin, false);
   }
 
-  /* Hai kiểu lái, để phân biệt còi chủ động với còi thụ động ngay lúc bật máy.
-   * Nghe được kiểu nào thì biết còi loại nào — và nếu không nghe kiểu nào cả
-   * thì vấn đề nằm ở dây hoặc ở chính cái còi, không phải ở phần mềm. */
-  printf("[ALERT] Buzzer test 1/2: muc DC (coi chu dong se keu)\r\n");
-  alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, true);
-  sl_udelay_wait(600000U);
-  alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
-  sl_udelay_wait(400000U);
-
-  printf("[ALERT] Buzzer test 2/2: tan so 1.4 kHz (coi thu dong se keu)\r\n");
+  printf("[ALERT] Buzzer test: tan so 1.4 kHz\r\n");
   for (uint32_t i = 0; i < 1700U; i++) {          /* ~600 ms ở 1,4 kHz */
     alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, (i & 1U) == 0U);
     sl_udelay_wait(BUZZER_TONE_HALF_PERIOD_US);
@@ -1187,11 +1177,24 @@ static void alert_poll(void)
     return;
   }
 
-  uint32_t period = (alert_level == ALERT_LEVEL_CRITICAL)
-                    ? BUZZER_PERIOD_CRITICAL_MS
-                    : (alert_level == ALERT_LEVEL_VITALS_ALERT)
-                    ? BUZZER_PERIOD_RED_MS : BUZZER_PERIOD_YELLOW_MS;
   uint32_t now = now_ms();
+
+  /* NORMAL is silent (handled above). LINE_WARNING (yellow) beeps
+   * intermittently - clear on/off gaps, so it reads as "pay attention" and
+   * not as a full emergency. VITALS_ALERT (red) and CRITICAL are danger
+   * levels: the buzzer stays on continuously, with no silent gaps, so it
+   * cannot be mistaken for the intermittent warning beep. */
+  bool continuous = (alert_level == ALERT_LEVEL_VITALS_ALERT
+                     || alert_level == ALERT_LEVEL_CRITICAL);
+
+  if (continuous) {
+    buzzer_on = true;
+  } else if (now - buzzer_last_toggle >= BUZZER_PERIOD_YELLOW_MS) {
+    buzzer_last_toggle = now;
+    buzzer_on = !buzzer_on;
+    /* Hết pha bíp thì tắt hẳn, đừng để chân dừng ở mức cao. */
+    if (!buzzer_on) alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+  }
 
   /* Trong lúc "đang bíp" thì phát tần số, không giữ mức. Chạy mỗi vòng lặp và
    * không chặn gì cả — đảo mức xong là trả quyền điều khiển ngay. */
@@ -1206,18 +1209,17 @@ static void alert_poll(void)
     }
   }
 
-  if (now - buzzer_last_toggle >= period) {
-    buzzer_last_toggle = now;
-    buzzer_on = !buzzer_on;
-    /* Hết pha bíp thì tắt hẳn, đừng để chân dừng ở mức cao. */
-    if (!buzzer_on) alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
-
-    /* Critical is the one level that flashes its lamp, so that it needs only
-     * one lamp to be distinguishable from a patient alert. Every other level
-     * holds its lamp steady - a ward where several lamps blink is a ward where
-     * nobody reads any of them. */
-    if (alert_level == ALERT_LEVEL_CRITICAL) {
-      alert_pin_write(LED_RED_PORT, LED_RED_PIN, buzzer_on);
+  /* Critical is the one level that flashes its lamp, so that it needs only
+   * one lamp to be distinguishable from a steady patient alert. The buzzer
+   * is continuous for both, so the LED blink runs on its own timer instead
+   * of riding on buzzer_on toggling. */
+  if (alert_level == ALERT_LEVEL_CRITICAL) {
+    static uint32_t led_last_toggle = 0;
+    static bool     led_on          = true;
+    if (now - led_last_toggle >= BUZZER_PERIOD_CRITICAL_MS) {
+      led_last_toggle = now;
+      led_on = !led_on;
+      alert_pin_write(LED_RED_PORT, LED_RED_PIN, led_on);
     }
   }
 }
