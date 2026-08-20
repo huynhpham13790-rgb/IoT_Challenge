@@ -961,7 +961,11 @@ static void max30102_poll(void)
  *  so it stays fully NON-BLOCKING - no delay() may ever be used, since the
  *  Zigbee stack and the drop sensor both need the main loop to keep turning.
  * ========================================================================== */
-#define ALERT_ACTIVE_HIGH   1     /* 0 if your LED/buzzer modules are active-low */
+#define ALERT_ACTIVE_HIGH   1     /* Governs the 3 LEDs. 0 if your LED modules are active-low. */
+#define BUZZER_ACTIVE_HIGH  0     /* The buzzer module is wired active-LOW - it sounds when the
+                                   * pin is pulled LOW, opposite of the LEDs. Kept as its own
+                                   * macro instead of sharing ALERT_ACTIVE_HIGH, since the two
+                                   * polarities differ on this board. */
 
 #define LED_GREEN_PORT   gpioPortA
 #define LED_GREEN_PIN    7        /* mikroBUS PWM = PA07 */
@@ -1052,7 +1056,8 @@ _Static_assert(SH_PINS_DIFFER(HX711_DOUT_PORT, HX711_DOUT_PIN,
 #define BUZZER_TONE_HALF_PERIOD_US  350U
 
 #define BUZZER_PERIOD_CRITICAL_MS 150U    /* CRITICAL: buzzer stays on continuously, only the red LED blinks at this rate */
-#define BUZZER_PERIOD_YELLOW_MS  1000U    /* LINE_WARNING: intermittent beep, on/off at this rate */
+#define BUZZER_YELLOW_ON_MS       500U    /* LINE_WARNING: short chirp... */
+#define BUZZER_YELLOW_OFF_MS     7000U    /* ...then a long silence, so it reads as "pay attention when convenient", not an emergency. */
 
 static alert_level_t alert_level        = ALERT_LEVEL_NORMAL;
 static bool          buzzer_on          = false;
@@ -1065,6 +1070,37 @@ static void alert_pin_write(GPIO_Port_TypeDef port, unsigned int pin, bool on)
 #else
   if (on) { GPIO_PinOutClear(port, pin); } else { GPIO_PinOutSet(port, pin); }
 #endif
+}
+
+/* The buzzer's own polarity (BUZZER_ACTIVE_HIGH, active-LOW) - deliberately
+ * not alert_pin_write(), which follows ALERT_ACTIVE_HIGH for the LEDs. The
+ * two modules are wired with opposite polarity on this board. */
+static void buzzer_write(bool on)
+{
+#if BUZZER_ACTIVE_HIGH
+  if (on) { GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN_NUM); } else { GPIO_PinOutClear(BUZZER_PORT, BUZZER_PIN_NUM); }
+#else
+  if (on) { GPIO_PinOutClear(BUZZER_PORT, BUZZER_PIN_NUM); } else { GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN_NUM); }
+#endif
+}
+
+/* Reads back the pin's own output register - the ground truth for "is this
+ * lamp actually lit right now", independent of alert_level/AI. The buzzer
+ * gate below is keyed off this, not off the level, so a green LED and a
+ * sounding buzzer can never disagree no matter what upstream logic decided. */
+static bool alert_pin_is_on(GPIO_Port_TypeDef port, unsigned int pin)
+{
+  uint32_t raw = GPIO_PinOutGet(port, pin);
+#if ALERT_ACTIVE_HIGH
+  return raw != 0U;
+#else
+  return raw == 0U;
+#endif
+}
+
+static bool alert_green_led_on(void)
+{
+  return alert_pin_is_on(LED_GREEN_PORT, LED_GREEN_PIN);
 }
 
 static void alert_init(void)
@@ -1088,7 +1124,7 @@ static void alert_init(void)
   alert_pin_write(LED_GREEN_PORT,  LED_GREEN_PIN,  false);
   alert_pin_write(LED_YELLOW_PORT, LED_YELLOW_PIN, false);
   alert_pin_write(LED_RED_PORT,    LED_RED_PIN,    false);
-  alert_pin_write(BUZZER_PORT,     BUZZER_PIN_NUM, false);
+  buzzer_write(false);
 
   printf("[ALERT] Self-test: green, yellow, red, buzzer...\r\n");
 
@@ -1105,10 +1141,10 @@ static void alert_init(void)
 
   printf("[ALERT] Buzzer test: tan so 1.4 kHz\r\n");
   for (uint32_t i = 0; i < 1700U; i++) {          /* ~600 ms ở 1,4 kHz */
-    alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, (i & 1U) == 0U);
+    buzzer_write((i & 1U) == 0U);
     sl_udelay_wait(BUZZER_TONE_HALF_PERIOD_US);
   }
-  alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+  buzzer_write(false);
 
   printf("[ALERT] Self-test done. No beep or no lamp here means WIRING, "
          "not the alarm logic.\r\n");
@@ -1127,7 +1163,6 @@ void sh_alert_set_level(alert_level_t level)
   /* Re-arm the beep so a level change is heard immediately rather than
    * waiting out the remainder of the previous level's period. */
   buzzer_last_toggle = now_ms();
-  buzzer_on = (level != ALERT_LEVEL_NORMAL);
 
   /* EXACTLY ONE lamp is lit at a time.
    *
@@ -1147,7 +1182,12 @@ void sh_alert_set_level(alert_level_t level)
   alert_pin_write(LED_RED_PORT,    LED_RED_PIN,
                   level == ALERT_LEVEL_VITALS_ALERT
                   || level == ALERT_LEVEL_CRITICAL);
-  alert_pin_write(BUZZER_PORT,     BUZZER_PIN_NUM, buzzer_on);
+
+  /* Buzzer gate: the green LED's actual pin state, read back after writing
+   * it above - not the level, not any AI/metric. Green lit means silent,
+   * full stop, regardless of why the level engine chose this level. */
+  buzzer_on = !alert_green_led_on();
+  buzzer_write(buzzer_on);
 
   printf("[ALERT] Level -> %s\r\n", sh_alert_level_name(level));
 }
@@ -1169,31 +1209,38 @@ const char *sh_alert_level_name(alert_level_t level)
 
 static void alert_poll(void)
 {
-  if (alert_level == ALERT_LEVEL_NORMAL) {
+  /* Green lit -> silent, unconditionally. This reads the actual LED pin, not
+   * alert_level, so a stale/incorrect level can never leave the buzzer
+   * sounding next to a green lamp. */
+  if (alert_green_led_on()) {
     if (buzzer_on) {
       buzzer_on = false;
-      alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+      buzzer_write(false);
     }
     return;
   }
 
   uint32_t now = now_ms();
 
-  /* NORMAL is silent (handled above). LINE_WARNING (yellow) beeps
-   * intermittently - clear on/off gaps, so it reads as "pay attention" and
-   * not as a full emergency. VITALS_ALERT (red) and CRITICAL are danger
-   * levels: the buzzer stays on continuously, with no silent gaps, so it
-   * cannot be mistaken for the intermittent warning beep. */
+  /* Green (handled above) is silent. LINE_WARNING (yellow) chirps briefly
+   * then falls silent for a long stretch - 0.5s on, 7s off - so it reads as
+   * "pay attention when convenient" and not as a full emergency.
+   * VITALS_ALERT (red) and CRITICAL are danger levels: the buzzer stays on
+   * continuously, with no silent gaps, so it cannot be mistaken for the
+   * intermittent warning chirp. */
   bool continuous = (alert_level == ALERT_LEVEL_VITALS_ALERT
                      || alert_level == ALERT_LEVEL_CRITICAL);
 
   if (continuous) {
     buzzer_on = true;
-  } else if (now - buzzer_last_toggle >= BUZZER_PERIOD_YELLOW_MS) {
-    buzzer_last_toggle = now;
-    buzzer_on = !buzzer_on;
-    /* Hết pha bíp thì tắt hẳn, đừng để chân dừng ở mức cao. */
-    if (!buzzer_on) alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+  } else {
+    uint32_t phase_ms = buzzer_on ? BUZZER_YELLOW_ON_MS : BUZZER_YELLOW_OFF_MS;
+    if (now - buzzer_last_toggle >= phase_ms) {
+      buzzer_last_toggle = now;
+      buzzer_on = !buzzer_on;
+      /* Hết pha bíp thì tắt hẳn, đừng để chân dừng ở mức cao. */
+      if (!buzzer_on) buzzer_write(false);
+    }
   }
 
   /* Trong lúc "đang bíp" thì phát tần số, không giữ mức. Chạy mỗi vòng lặp và
@@ -1205,7 +1252,7 @@ static void alert_poll(void)
     if (now_micros - tone_last_us >= BUZZER_TONE_HALF_PERIOD_US) {
       tone_last_us = now_micros;
       tone_level = !tone_level;
-      alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, tone_level);
+      buzzer_write(tone_level);
     }
   }
 
