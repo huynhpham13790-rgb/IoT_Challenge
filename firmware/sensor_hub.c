@@ -970,7 +970,14 @@ static void max30102_poll(void)
 #define LED_RED_PORT     gpioPortA
 #define LED_RED_PIN      5        /* mikroBUS RX  = PA05 */
 #define BUZZER_PORT      gpioPortC
-#define BUZZER_PIN_NUM   4        /* mikroBUS CS = PC04 */
+#define BUZZER_PIN_NUM   6        /* mikroBUS RST = PC06 */
+
+/* ===== TEST ONLY: còi kêu liên tục (tần số 1,4 kHz), bất kể alert_level,
+ * bất kể sh_monitoring_active(), bất kể bất cứ gì khác - dùng để xác nhận dây
+ * nối tới PC06 và chính cái còi hoạt động, tách hẳn khỏi logic báo động.
+ * ĐẶT LẠI VỀ 0 trước khi dùng thật: bật lên thì còi kêu suốt, không nghe được
+ * cảnh báo thật nào nữa. */
+#define BUZZER_CONTINUOUS_TEST   0
 
 /* --- No two peripherals may share a pin ------------------------------------
  *
@@ -1007,7 +1014,7 @@ _Static_assert(SH_PINS_DIFFER(BUZZER_PORT, BUZZER_PIN_NUM,
                               HX711_DOUT_PORT, HX711_DOUT_PIN),
                "Buzzer and HX711 DOUT are on the same pin. On BRD2709A the "
                "load cell data line is PC01 = mikroBUS MISO; the buzzer is on "
-               "PC04 = mikroBUS CS. Move the wire, or move the scale.");
+               "PC06 = mikroBUS RST. Move the wire, or move the scale.");
 _Static_assert(SH_PINS_DIFFER(BUZZER_PORT, BUZZER_PIN_NUM,
                               HX711_SCK_PORT, HX711_SCK_PIN),
                "Buzzer and HX711 SCK are on the same pin (PC03 = mikroBUS SCK).");
@@ -1051,9 +1058,14 @@ _Static_assert(SH_PINS_DIFFER(HX711_DOUT_PORT, HX711_DOUT_PIN,
  * (đo được), tức ~180 µs một vòng, nên nửa chu kỳ 350 µs là thứ nó theo kịp. */
 #define BUZZER_TONE_HALF_PERIOD_US  350U
 
-#define BUZZER_PERIOD_CRITICAL_MS 150U    /* urgent beep = both systems failing */
-#define BUZZER_PERIOD_RED_MS      300U    /* fast beep = danger    (matches the .ino) */
-#define BUZZER_PERIOD_YELLOW_MS  1000U    /* slow beep = warning   (matches the .ino) */
+/* Vàng: kêu 0,5s rồi im 5s, lặp lại. Đỏ (VITALS_ALERT lẫn CRITICAL): kêu
+ * LIÊN TỤC, không còn pha im - xem alert_poll(). CRITICAL vẫn được phân biệt
+ * với VITALS_ALERT, nhưng giờ bằng đèn đỏ NHẤP NHÁY (LED_CRITICAL_FLASH_MS)
+ * chứ không còn bằng nhịp còi, vì còi ở cả hai mức đỏ giờ nghe giống hệt
+ * nhau. */
+#define BUZZER_PERIOD_YELLOW_ON_MS    500U
+#define BUZZER_PERIOD_YELLOW_OFF_MS  5000U
+#define LED_CRITICAL_FLASH_MS         150U
 
 static alert_level_t alert_level        = ALERT_LEVEL_NORMAL;
 static bool          buzzer_on          = false;
@@ -1062,6 +1074,20 @@ static uint32_t      buzzer_last_toggle = 0;
 static void alert_pin_write(GPIO_Port_TypeDef port, unsigned int pin, bool on)
 {
 #if ALERT_ACTIVE_HIGH
+  if (on) { GPIO_PinOutSet(port, pin); } else { GPIO_PinOutClear(port, pin); }
+#else
+  if (on) { GPIO_PinOutClear(port, pin); } else { GPIO_PinOutSet(port, pin); }
+#endif
+}
+
+/* Còi kích âm (active-low) - ngược cực với 3 đèn LED, nên có polarity RIÊNG
+ * thay vì dùng chung ALERT_ACTIVE_HIGH: đổi ALERT_ACTIVE_HIGH sẽ lật cả đèn
+ * lẫn còi, trong khi chỉ mỗi còi cần lật. */
+#define BUZZER_ACTIVE_HIGH   0
+
+static void buzzer_pin_write(GPIO_Port_TypeDef port, unsigned int pin, bool on)
+{
+#if BUZZER_ACTIVE_HIGH
   if (on) { GPIO_PinOutSet(port, pin); } else { GPIO_PinOutClear(port, pin); }
 #else
   if (on) { GPIO_PinOutClear(port, pin); } else { GPIO_PinOutSet(port, pin); }
@@ -1089,7 +1115,7 @@ static void alert_init(void)
   alert_pin_write(LED_GREEN_PORT,  LED_GREEN_PIN,  false);
   alert_pin_write(LED_YELLOW_PORT, LED_YELLOW_PIN, false);
   alert_pin_write(LED_RED_PORT,    LED_RED_PIN,    false);
-  alert_pin_write(BUZZER_PORT,     BUZZER_PIN_NUM, false);
+  buzzer_pin_write(BUZZER_PORT,     BUZZER_PIN_NUM, false);
 
   printf("[ALERT] Self-test: green, yellow, red, buzzer...\r\n");
 
@@ -1108,17 +1134,17 @@ static void alert_init(void)
    * Nghe được kiểu nào thì biết còi loại nào — và nếu không nghe kiểu nào cả
    * thì vấn đề nằm ở dây hoặc ở chính cái còi, không phải ở phần mềm. */
   printf("[ALERT] Buzzer test 1/2: muc DC (coi chu dong se keu)\r\n");
-  alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, true);
+  buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, true);
   sl_udelay_wait(600000U);
-  alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+  buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
   sl_udelay_wait(400000U);
 
   printf("[ALERT] Buzzer test 2/2: tan so 1.4 kHz (coi thu dong se keu)\r\n");
   for (uint32_t i = 0; i < 1700U; i++) {          /* ~600 ms ở 1,4 kHz */
-    alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, (i & 1U) == 0U);
+    buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, (i & 1U) == 0U);
     sl_udelay_wait(BUZZER_TONE_HALF_PERIOD_US);
   }
-  alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+  buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
 
   printf("[ALERT] Self-test done. No beep or no lamp here means WIRING, "
          "not the alarm logic.\r\n");
@@ -1144,12 +1170,12 @@ void sh_alert_set_level(alert_level_t level)
    * CRITICAL used to light RED and YELLOW together. Two lamps on at once reads
    * as "two separate faults" from across the room, and on this hardware it
    * mostly just looks like the panel is broken. So critical shows RED, and is
-   * told apart from a patient alert by BLINKING it - handled in alert_poll(),
-   * in step with the buzzer.
+   * told apart from a patient alert by BLINKING it - handled in alert_poll().
    *
    * Nothing is lost: red steady means the patient, red flashing means the
-   * patient AND the line, and the buzzer cadence already differs between the
-   * two. */
+   * patient AND the line. The buzzer itself no longer tells the two apart -
+   * both play the continuous red tone now - so the flashing lamp is the only
+   * thing that does. */
   alert_pin_write(LED_GREEN_PORT,  LED_GREEN_PIN,
                   level == ALERT_LEVEL_NORMAL);
   alert_pin_write(LED_YELLOW_PORT, LED_YELLOW_PIN,
@@ -1157,7 +1183,7 @@ void sh_alert_set_level(alert_level_t level)
   alert_pin_write(LED_RED_PORT,    LED_RED_PIN,
                   level == ALERT_LEVEL_VITALS_ALERT
                   || level == ALERT_LEVEL_CRITICAL);
-  alert_pin_write(BUZZER_PORT,     BUZZER_PIN_NUM, buzzer_on);
+  buzzer_pin_write(BUZZER_PORT,     BUZZER_PIN_NUM, buzzer_on);
 
   printf("[ALERT] Level -> %s\r\n", sh_alert_level_name(level));
 }
@@ -1179,22 +1205,61 @@ const char *sh_alert_level_name(alert_level_t level)
 
 static void alert_poll(void)
 {
+#if BUZZER_CONTINUOUS_TEST
+  {
+    /* Same tone loop as the real alarm's "đang bíp" phase, just never gated
+     * or turned off - see the BUZZER_CONTINUOUS_TEST comment above. */
+    static uint32_t test_tone_us    = 0;
+    static bool     test_tone_level = false;
+    uint32_t now_micros = now_us();
+    if (now_micros - test_tone_us >= BUZZER_TONE_HALF_PERIOD_US) {
+      test_tone_us = now_micros;
+      test_tone_level = !test_tone_level;
+      buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, test_tone_level);
+    }
+    return;   /* skip the real alarm/lamp logic entirely while testing */
+  }
+#endif
+
   if (alert_level == ALERT_LEVEL_NORMAL) {
     if (buzzer_on) {
       buzzer_on = false;
-      alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+      buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
     }
     return;
   }
 
-  uint32_t period = (alert_level == ALERT_LEVEL_CRITICAL)
-                    ? BUZZER_PERIOD_CRITICAL_MS
-                    : (alert_level == ALERT_LEVEL_VITALS_ALERT)
-                    ? BUZZER_PERIOD_RED_MS : BUZZER_PERIOD_YELLOW_MS;
   uint32_t now = now_ms();
 
-  /* Trong lúc "đang bíp" thì phát tần số, không giữ mức. Chạy mỗi vòng lặp và
-   * không chặn gì cả — đảo mức xong là trả quyền điều khiển ngay. */
+  /* Đỏ (VITALS_ALERT và CRITICAL): kêu LIÊN TỤC - không có pha im, chỉ đảo
+   * mức ở tần số còi mỗi vòng lặp để phát ra âm thanh (mức DC giữ nguyên thì
+   * còi thụ động im, xem giải thích ở đầu file). CRITICAL vẫn được phân biệt
+   * với VITALS_ALERT, nhưng bằng đèn đỏ NHẤP NHÁY dưới đây - độc lập hoàn
+   * toàn với còi, vì còi ở cả hai mức giờ nghe giống hệt nhau. */
+  if (alert_level == ALERT_LEVEL_VITALS_ALERT || alert_level == ALERT_LEVEL_CRITICAL) {
+    buzzer_on = true;
+
+    static uint32_t tone_last_us = 0;
+    static bool     tone_level   = false;
+    uint32_t now_micros = now_us();
+    if (now_micros - tone_last_us >= BUZZER_TONE_HALF_PERIOD_US) {
+      tone_last_us = now_micros;
+      tone_level = !tone_level;
+      buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, tone_level);
+    }
+
+    if (alert_level == ALERT_LEVEL_CRITICAL) {
+      static bool led_on = false;
+      if (now - buzzer_last_toggle >= LED_CRITICAL_FLASH_MS) {
+        buzzer_last_toggle = now;
+        led_on = !led_on;
+        alert_pin_write(LED_RED_PORT, LED_RED_PIN, led_on);
+      }
+    }
+    return;
+  }
+
+  /* Vàng (LINE_WARNING): kêu 0,5s rồi im 5s, lặp lại. */
   if (buzzer_on) {
     static uint32_t tone_last_us = 0;
     static bool     tone_level   = false;
@@ -1202,22 +1267,19 @@ static void alert_poll(void)
     if (now_micros - tone_last_us >= BUZZER_TONE_HALF_PERIOD_US) {
       tone_last_us = now_micros;
       tone_level = !tone_level;
-      alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, tone_level);
+      buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, tone_level);
     }
-  }
 
-  if (now - buzzer_last_toggle >= period) {
-    buzzer_last_toggle = now;
-    buzzer_on = !buzzer_on;
-    /* Hết pha bíp thì tắt hẳn, đừng để chân dừng ở mức cao. */
-    if (!buzzer_on) alert_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
-
-    /* Critical is the one level that flashes its lamp, so that it needs only
-     * one lamp to be distinguishable from a patient alert. Every other level
-     * holds its lamp steady - a ward where several lamps blink is a ward where
-     * nobody reads any of them. */
-    if (alert_level == ALERT_LEVEL_CRITICAL) {
-      alert_pin_write(LED_RED_PORT, LED_RED_PIN, buzzer_on);
+    if (now - buzzer_last_toggle >= BUZZER_PERIOD_YELLOW_ON_MS) {
+      buzzer_last_toggle = now;
+      buzzer_on = false;
+      /* Hết pha bíp thì tắt hẳn, đừng để chân dừng ở mức cao. */
+      buzzer_pin_write(BUZZER_PORT, BUZZER_PIN_NUM, false);
+    }
+  } else {
+    if (now - buzzer_last_toggle >= BUZZER_PERIOD_YELLOW_OFF_MS) {
+      buzzer_last_toggle = now;
+      buzzer_on = true;
     }
   }
 }
